@@ -1,0 +1,8 @@
+{
+  "name": "web3modal",
+  "private": true,
+  "dependencies": {
+    "@web3modal/ethers": "^4.1.1",
+    "ethers": "^6.11.1"
+  }
+}
