@@ -15,6 +15,11 @@ class DepsAnalyzer {
   // value - files
   depsFiles = new Map<string, Set<string>>();
 
+  // 存储依赖被什么文件引用
+  // key - name@version
+  // value - file
+  issuer = new Map<string, string>();
+
   private projectFileKey = "$$project";
   private addProjectSourceFile(file: string) {
     let s = this.depsFiles.get(this.projectFileKey);
@@ -27,9 +32,7 @@ class DepsAnalyzer {
 
   private handleDepsFile(name: string, version: string, file: string): boolean {
     if (!name || !version) {
-      console.log(`name or version is empty in: 
-      ${file}`);
-
+      console.log(`name or version is empty in: ${file}`);
       return false;
     }
     {
@@ -54,40 +57,34 @@ class DepsAnalyzer {
     return true;
   }
 
+  private async getPkgInfo(dir: string) {
+    let maxCount = 10;
+    let count = 0;
+    do {
+      dir = path.resolve(dir, "..");
+      const pkgPath = path.resolve(dir, "package.json");
+      if (await fs.exists(pkgPath)) {
+        const pkg = await fs.readJson(pkgPath);
+        if (pkg.name && pkg.version) {
+          return pkg;
+        }
+      }
+    } while (count++ < maxCount);
+
+    console.log(`name or version is empty in: ${dir}`);
+  }
+
   private async resolveDep(data: ResolveData) {
     const res = data.createData.resourceResolveData as ResourceResolveData;
     let { name, version } = res.descriptionFileData;
     let dir = res.descriptionFileRoot;
-    let maxCount = 10;
-    let count = 0;
-
-    do {
-      if (name && version) {
-        return { name, version };
-      }
-      // 向上一级目录查找 package.json
-      dir = path.resolve(dir, "..");
-      const pkgPath = path.resolve(dir, "package.json");
-
-      if (await fs.exists(pkgPath)) {
-        const pkg = await fs.readJson(pkgPath);
-        name = pkg.name;
-        version = pkg.version;
-      }
-
-      // 读取 package.json
-    } while (count++ < maxCount);
-
     if (!name || !version) {
-      console.log(`name or version is empty in: 
-      ${res.descriptionFilePath}`);
-      return;
+      return await this.getPkgInfo(dir);
     }
+    return { name, version };
   }
 
   apply(compiler: Compiler) {
-    console.log("DepsAnalyzer is running...");
-
     compiler.hooks.normalModuleFactory.tap(
       `${DepsAnalyzer.name}.normalModuleFactory`,
       (normalModuleFactory) => {
@@ -104,11 +101,23 @@ class DepsAnalyzer {
               this.addProjectSourceFile(resolvedId);
               return;
             }
-            // 对于 node_modules 中的文件，我们需要解析出依赖的包名和版本
-            const res = await this.resolveDep(data);
-            if (res) {
-              const { name, version } = res;
-              this.handleDepsFile(name, version, resolvedId);
+            {
+              // 对于 node_modules 中的文件，我们需要解析出依赖的包名和版本
+              const res = await this.resolveDep(data);
+              if (res) {
+                const { name, version } = res;
+                this.handleDepsFile(name, version, resolvedId);
+
+                {
+                  // 记录 issuer
+                  const issuer = data.contextInfo.issuer;
+                  const key = `${name}@${version}`;
+                  // 只需要记录第一次引用就行
+                  if (issuer && !this.issuer.has(key)) {
+                    this.issuer.set(`${name}@${version}`, issuer);
+                  }
+                }
+              }
             }
           }
         );
@@ -117,16 +126,19 @@ class DepsAnalyzer {
 
     // 完成编译后输出结果
     compiler.hooks.done.tap(`${DepsAnalyzer.name}.done`, () => {
-      console.log("DepsAnalyzer finished");
-
       {
         // Log 有某些依赖安装了多个版本
-        const multiVersionDeps = Array.from(this.deps.entries()).filter(
-          ([name, versions]) => versions.size > 1
-        );
-        if (multiVersionDeps.length > 0) {
-          console.log("multiVersionDeps:");
-          console.log(multiVersionDeps);
+        let msg = "";
+        this.deps.forEach((versions, name) => {
+          if (versions.size > 1) {
+            msg += `${name}: ${Array.from(versions).join(", ")}\n`;
+          }
+        });
+        if (msg) {
+          console.log("Some dependencies have multiple versions installed:");
+          console.log(msg);
+        } else {
+          console.log("All dependencies are has only one version.");
         }
       }
     });
