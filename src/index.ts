@@ -9,7 +9,7 @@ import type { Options } from "./shared";
 const pkgInfo = new PkgInfo();
 
 class DepsAnalyzer {
-  static name = "DepsAnalyzer";
+  static pluginName = "DepsAnalyzer";
 
   constructor(private opts: Options = {}) {
     this.opts.verbose ??= true;
@@ -73,7 +73,7 @@ class DepsAnalyzer {
         issuer: this.issuer.toJson(),
       };
       await fs.writeJSON(
-        path.resolve(outDir, `${DepsAnalyzer.name}.json`),
+        path.resolve(outDir, `${DepsAnalyzer.pluginName}.json`),
         json,
         {
           spaces: 2,
@@ -84,10 +84,10 @@ class DepsAnalyzer {
 
   apply(compiler: Compiler) {
     compiler.hooks.normalModuleFactory.tap(
-      `${DepsAnalyzer.name}.normalModuleFactory`,
+      `${DepsAnalyzer.pluginName}.normalModuleFactory`,
       (normalModuleFactory) => {
         normalModuleFactory.hooks.afterResolve.tapPromise(
-          `${DepsAnalyzer.name}.normalModuleFactory.afterResolve`,
+          `${DepsAnalyzer.pluginName}.normalModuleFactory.afterResolve`,
           async (data) => {
             const resolvedId = data.createData.resource;
             if (!resolvedId) {
@@ -124,29 +124,34 @@ class DepsAnalyzer {
 
     // 完成编译后输出结果
     if (this.opts) {
-      compiler.hooks.done.tapPromise(`${DepsAnalyzer.name}.done`, async () => {
-        if (this.opts?.verbose) {
-          // Log 有某些依赖安装了多个版本
-          let msg = "";
-          this.deps.forEach((versions, name) => {
-            if (versions.size > 1) {
-              msg += `\n${name}:\n`;
-              versions.forEach((version) => {
-                const key = this.getKey(name, version);
-                msg += ` ${version} imported by: \n`;
-                msg += ` ${this.issuer.get(key)}\n`;
-              });
+      compiler.hooks.done.tapPromise(
+        `${DepsAnalyzer.pluginName}.done`,
+        async () => {
+          if (this.opts?.verbose) {
+            // Log 有某些依赖安装了多个版本
+            let msg = "";
+            this.deps.forEach((versions, name) => {
+              if (versions.size > 1) {
+                msg += `\n${name}:\n`;
+                versions.forEach((version) => {
+                  const key = this.getKey(name, version);
+                  msg += ` ${version} imported by: \n`;
+                  msg += ` ${this.issuer.get(key)}\n`;
+                });
+              }
+            });
+            if (msg) {
+              console.log(
+                "Some dependencies have multiple versions installed:"
+              );
+              console.log(msg);
+            } else {
+              //console.log("All dependencies are has only one version.");
             }
-          });
-          if (msg) {
-            console.log("Some dependencies have multiple versions installed:");
-            console.log(msg);
-          } else {
-            //console.log("All dependencies are has only one version.");
           }
+          await this.write();
         }
-        await this.write();
-      });
+      );
     }
   }
 }
