@@ -1,8 +1,8 @@
 import path from "path";
 import type { Compiler, ResolveData } from "webpack";
-import fs from "fs-extra";
 import { PkgInfo } from "./pkgInfo";
 import { MapSet } from "./MapSet";
+import { IssuerMap } from "./IssuerMap";
 
 const pkgInfo = new PkgInfo();
 
@@ -19,10 +19,7 @@ class DepsAnalyzer {
   // value - files
   depsFiles = new MapSet();
 
-  // 存储依赖被什么文件引用
-  // key - name@version
-  // value - file
-  issuer = new Map<string, string>();
+  issuer = new IssuerMap();
 
   private projectFileKey = "$$project";
   private addProjectSourceFile(file: string) {
