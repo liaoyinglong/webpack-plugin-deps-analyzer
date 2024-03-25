@@ -45,7 +45,7 @@ class DepsAnalyzer {
     }
 
     {
-      const key = `${name}@${version}`;
+      const key = this.getKey(name, version);
       let s = this.depsFiles.get(key);
       if (!s) {
         s = new Set();
@@ -83,6 +83,9 @@ class DepsAnalyzer {
     }
     return { name, version };
   }
+  private getKey(name: string, version: string) {
+    return `${name}@${version}`;
+  }
 
   apply(compiler: Compiler) {
     compiler.hooks.normalModuleFactory.tap(
@@ -111,10 +114,10 @@ class DepsAnalyzer {
                 {
                   // 记录 issuer
                   const issuer = data.contextInfo.issuer;
-                  const key = `${name}@${version}`;
+                  const key = this.getKey(name, version);
                   // 只需要记录第一次引用就行
                   if (issuer && !this.issuer.has(key)) {
-                    this.issuer.set(`${name}@${version}`, issuer);
+                    this.issuer.set(key, issuer);
                   }
                 }
               }
@@ -131,14 +134,19 @@ class DepsAnalyzer {
         let msg = "";
         this.deps.forEach((versions, name) => {
           if (versions.size > 1) {
-            msg += `${name}: ${Array.from(versions).join(", ")}\n`;
+            msg += `\n${name}:\n`;
+            versions.forEach((version) => {
+              const key = this.getKey(name, version);
+              msg += ` ${version} imported by: \n`;
+              msg += ` ${this.issuer.get(key)}\n`;
+            });
           }
         });
         if (msg) {
           console.log("Some dependencies have multiple versions installed:");
           console.log(msg);
         } else {
-          console.log("All dependencies are has only one version.");
+          //console.log("All dependencies are has only one version.");
         }
       }
     });
