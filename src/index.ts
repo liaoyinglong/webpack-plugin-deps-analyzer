@@ -4,19 +4,16 @@ import { PkgInfo } from "./pkgInfo";
 import { MapSet } from "./MapSet";
 import { IssuerMap } from "./IssuerMap";
 import fs from "fs-extra";
+import type { Options } from "./shared";
 
 const pkgInfo = new PkgInfo();
 
 class DepsAnalyzer {
   static name = "DepsAnalyzer";
 
-  constructor(
-    private opts?: {
-      // 输出收集到的数据
-      outDir: string;
-      verbose?: boolean;
-    }
-  ) {}
+  constructor(private opts: Options = {}) {
+    this.opts.verbose ??= true;
+  }
 
   // 存储依赖版本
   // key - name

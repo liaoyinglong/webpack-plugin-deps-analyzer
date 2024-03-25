@@ -1,14 +1,13 @@
 {
   "name": "webpack-plugin-deps-analyzer",
-  "module": "index.ts",
-  "type": "module",
   "scripts": {
     "prebuild": "tsc --diagnostics",
     "build": "tsup --clean --splitting",
     "build-fast": "pnpm run build --no-dts",
     "dev": "pnpm run build-fast --watch",
     "test": "vitest run",
-    "test:u": "vitest -u"
+    "test:u": "vitest -u",
+    "release": "pnpm build"
   },
   "devDependencies": {
     "prettier": "^3.2.5",
@@ -23,5 +22,20 @@
   "packageManager": "pnpm@8.14.1",
   "dependencies": {
     "fs-extra": "^11.2.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }
