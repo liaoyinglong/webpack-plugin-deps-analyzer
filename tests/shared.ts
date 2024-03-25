@@ -17,7 +17,10 @@ export async function runWebpackBuild(name: string) {
   // clean output dir
   await fs.remove(output);
 
-  const plugin = new DepsAnalyzer();
+  const plugin = new DepsAnalyzer({
+    outDir: output,
+    verbose: true,
+  });
 
   return new Promise<DepsAnalyzer>((resolve, reject) => {
     webpack(

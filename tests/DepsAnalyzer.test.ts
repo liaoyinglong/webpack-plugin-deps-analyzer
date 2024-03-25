@@ -10,6 +10,5 @@ describe("DepsAnalyzer", () => {
     expect(plugin.issuer.size).gt(0);
 
     expect(plugin.deps.toJson()).toMatchSnapshot();
-    expect(plugin.issuer.toJson()).toMatchSnapshot();
   });
 });

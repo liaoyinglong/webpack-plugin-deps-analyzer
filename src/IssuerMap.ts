@@ -12,11 +12,6 @@ export class IssuerMap extends Map<string, string> {
 
     keys.forEach((k) => {
       let v = this.get(k)!;
-      // 去除 node_modules 之前的路径，包括 node_modules
-      // case:
-      // input:  /users/xxx/node_modules/xxx/index.js
-      // output: /xxx/index.js
-      v = v.replace(/.*node_modules/, "");
       r[k] = v;
     });
     return r;
