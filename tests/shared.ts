@@ -1,7 +1,8 @@
 import webpack from "webpack";
 import path from "path";
 import DepsAnalyzer from "../src";
-import fs from "fs/promises";
+
+import fs from "fs-extra";
 
 // 运行 webpack build main.js
 export async function runWebpackBuild(name: string) {
@@ -10,10 +11,8 @@ export async function runWebpackBuild(name: string) {
   const output = path.resolve(__dirname, `fixtures/${name}/dist`);
 
   // check entry file exists
-  try {
-    await fs.access(entry);
-  } catch (e) {
-    reject(e);
+  if (!(await fs.exists(entry))) {
+    reject(new Error(`entry file not exists: ${entry}`));
     return promise;
   }
 

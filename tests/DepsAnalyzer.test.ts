@@ -1,6 +1,5 @@
-import { test, expect, mock, describe } from "bun:test";
+import { test, expect, describe } from "vitest";
 import { runWebpackBuild } from "./shared";
-const random = mock(() => Math.random());
 
 describe("DepsAnalyzer", () => {
   test("web3Modal", async () => {
