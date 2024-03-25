@@ -13,6 +13,10 @@ export async function runWebpackBuild(name: string) {
   if (!(await fs.exists(entry))) {
     throw new Error(`entry file not exists: ${entry}`);
   }
+
+  // clean output dir
+  await fs.remove(output);
+
   const plugin = new DepsAnalyzer();
 
   return new Promise<DepsAnalyzer>((resolve, reject) => {
@@ -24,8 +28,11 @@ export async function runWebpackBuild(name: string) {
           path: output,
           filename: "bundle.js",
         },
-        mode: "development",
+        mode: "production",
         plugins: [plugin],
+        optimization: {
+          minimize: false,
+        },
       },
       (err, stats) => {
         if (err) {

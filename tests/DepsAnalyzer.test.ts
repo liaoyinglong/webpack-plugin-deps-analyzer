@@ -9,6 +9,6 @@ describe("DepsAnalyzer", () => {
     expect(plugin.depsFiles.size).gt(0);
     expect(plugin.issuer.size).gt(0);
 
-    expect(plugin.deps).toMatchSnapshot();
+    expect(plugin.deps.toJson()).toMatchSnapshot();
   });
 });
