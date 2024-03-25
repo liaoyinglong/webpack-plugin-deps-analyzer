@@ -6,38 +6,35 @@ import fs from "fs-extra";
 
 // 运行 webpack build main.js
 export async function runWebpackBuild(name: string) {
-  const { reject, resolve, promise } = Promise.withResolvers();
   const entry = path.resolve(__dirname, `fixtures/${name}/main.js`);
   const output = path.resolve(__dirname, `fixtures/${name}/dist`);
 
   // check entry file exists
   if (!(await fs.exists(entry))) {
-    reject(new Error(`entry file not exists: ${entry}`));
-    return promise;
+    throw new Error(`entry file not exists: ${entry}`);
   }
+  const plugin = new DepsAnalyzer();
 
-  webpack(
-    {
-      name,
-      entry,
-      output: {
-        path: output,
-        filename: "bundle.js",
+  return new Promise<DepsAnalyzer>((resolve, reject) => {
+    webpack(
+      {
+        name,
+        entry,
+        output: {
+          path: output,
+          filename: "bundle.js",
+        },
+        mode: "development",
+        plugins: [plugin],
       },
-      mode: "development",
-      plugins: [new DepsAnalyzer()],
-    },
-    (err, stats) => {
-      if (err) {
-        console.error(`build with error`, err);
-        reject(err);
-      } else {
-        console.log("build success");
-
-        resolve(stats);
+      (err, stats) => {
+        if (err) {
+          console.error(`build with error`, err);
+          reject(err);
+        } else {
+          resolve(plugin);
+        }
       }
-    }
-  );
-
-  return await promise;
+    );
+  });
 }

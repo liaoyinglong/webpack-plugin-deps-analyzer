@@ -1,6 +1,10 @@
 import path from "path";
 import type { Compiler, ResolveData } from "webpack";
 import fs from "fs-extra";
+import { PkgInfo } from "./pkgInfo";
+import { MapSet } from "./MapSet";
+
+const pkgInfo = new PkgInfo();
 
 class DepsAnalyzer {
   static name = "DepsAnalyzer";
@@ -8,12 +12,12 @@ class DepsAnalyzer {
   // 存储依赖版本
   // key - name
   // value - versions
-  deps = new Map<string, Set<string>>();
+  deps = new MapSet();
 
   // 存储依赖文件
   // key - name@version
   // value - files
-  depsFiles = new Map<string, Set<string>>();
+  depsFiles = new MapSet();
 
   // 存储依赖被什么文件引用
   // key - name@version
@@ -22,12 +26,7 @@ class DepsAnalyzer {
 
   private projectFileKey = "$$project";
   private addProjectSourceFile(file: string) {
-    let s = this.depsFiles.get(this.projectFileKey);
-    if (!s) {
-      s = new Set();
-      this.depsFiles.set(this.projectFileKey, s);
-    }
-    s.add(file);
+    this.depsFiles.append(this.projectFileKey, file);
   }
 
   private handleDepsFile(name: string, version: string, file: string): boolean {
@@ -35,43 +34,14 @@ class DepsAnalyzer {
       console.log(`name or version is empty in: ${file}`);
       return false;
     }
-    {
-      let s = this.deps.get(name);
-      if (!s) {
-        s = new Set();
-        this.deps.set(name, s);
-      }
-      s.add(version);
-    }
+    this.deps.append(name, version);
 
     {
       const key = this.getKey(name, version);
-      let s = this.depsFiles.get(key);
-      if (!s) {
-        s = new Set();
-        this.depsFiles.set(key, s);
-      }
-      s.add(file);
+      this.depsFiles.append(key, file);
     }
 
     return true;
-  }
-
-  private async getPkgInfo(dir: string) {
-    let maxCount = 10;
-    let count = 0;
-    do {
-      dir = path.resolve(dir, "..");
-      const pkgPath = path.resolve(dir, "package.json");
-      if (await fs.exists(pkgPath)) {
-        const pkg = await fs.readJson(pkgPath);
-        if (pkg.name && pkg.version) {
-          return pkg;
-        }
-      }
-    } while (count++ < maxCount);
-
-    console.log(`name or version is empty in: ${dir}`);
   }
 
   private async resolveDep(data: ResolveData) {
@@ -79,7 +49,10 @@ class DepsAnalyzer {
     let { name, version } = res.descriptionFileData;
     let dir = res.descriptionFileRoot;
     if (!name || !version) {
-      return await this.getPkgInfo(dir);
+      //console.time("getPkgInfo");
+      const r = await pkgInfo.getInfo(dir);
+      //console.timeEnd("getPkgInfo");
+      return r;
     }
     return { name, version };
   }

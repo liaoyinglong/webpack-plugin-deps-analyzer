@@ -8,7 +8,7 @@
     "build-fast": "pnpm run build --no-dts",
     "dev": "pnpm run build-fast --watch",
     "test": "vitest run",
-    "test:update": "vitest -u"
+    "test:u": "vitest -u"
   },
   "devDependencies": {
     "prettier": "^3.2.5",
