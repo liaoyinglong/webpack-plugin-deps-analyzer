@@ -71,13 +71,11 @@ class DepsAnalyzer {
         files: this.depsFiles.toJson(),
         issuer: this.issuer.toJson(),
       };
-      await fs.writeJSON(
-        path.resolve(outDir, `${DepsAnalyzer.pluginName}.json`),
-        json,
-        {
-          spaces: 2,
-        }
-      );
+      const output = path.resolve(outDir, `${DepsAnalyzer.pluginName}.json`);
+      await fs.ensureFile(output);
+      await fs.writeJSON(output, json, {
+        spaces: 2,
+      });
     }
   }
 
