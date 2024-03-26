@@ -1,6 +1,6 @@
 {
   "name": "webpack-plugin-deps-analyzer",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "scripts": {
     "prebuild": "tsc --diagnostics",
     "build": "tsup --clean --splitting",
