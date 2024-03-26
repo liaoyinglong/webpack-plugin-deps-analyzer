@@ -5,15 +5,14 @@ import { MapSet } from "./MapSet";
 import { IssuerMap } from "./IssuerMap";
 import fs from "fs-extra";
 import type { Options } from "./shared";
+import pc from "picocolors";
 
 const pkgInfo = new PkgInfo();
 
 class DepsAnalyzer {
   static pluginName = "DepsAnalyzer";
 
-  constructor(private opts: Options = {}) {
-    this.opts.verbose ??= true;
-  }
+  constructor(private opts: Options = {}) {}
 
   // 存储依赖版本
   // key - name
@@ -123,36 +122,46 @@ class DepsAnalyzer {
     );
 
     // 完成编译后输出结果
-    if (this.opts) {
-      compiler.hooks.done.tapPromise(
-        `${DepsAnalyzer.pluginName}.done`,
-        async () => {
-          if (this.opts?.verbose) {
-            // Log 有某些依赖安装了多个版本
-            let msg = "";
-            this.deps.forEach((versions, name) => {
-              if (versions.size > 1) {
-                msg += `\n${name}:\n`;
-                versions.forEach((version) => {
-                  const key = this.getKey(name, version);
-                  msg += ` ${version} imported by: \n`;
-                  msg += ` ${this.issuer.get(key)}\n`;
-                });
-              }
-            });
-            if (msg) {
-              console.log(
-                "Some dependencies have multiple versions installed:"
-              );
-              console.log(msg);
-            } else {
-              //console.log("All dependencies are has only one version.");
-            }
-          }
-          await this.write();
+    compiler.hooks.done.tapPromise(
+      `${DepsAnalyzer.pluginName}.done`,
+      async () => {
+        if (this.opts.logFileCount) {
+          // log 多少个模块参与编译
+
+          let sum = 0;
+          this.depsFiles.forEach((v) => (sum += v.size));
+          console.log(pc.cyan("All compiled modules: "), sum);
         }
-      );
-    }
+
+        if (this.opts.logMultiDeps) {
+          // Log 有某些依赖安装了多个版本
+          let msg = "";
+          this.deps.forEach((versions, name) => {
+            if (versions.size > 1) {
+              if (msg) msg += "\n";
+              msg += `${pc.cyan(name)}:\n`;
+              versions.forEach((version) => {
+                const key = this.getKey(name, version);
+                msg += ` ${pc.cyan(version)}\n`;
+                msg += pc.gray(
+                  `   dep location: ${this.depsFiles.get(key)?.values().next().value}\n`
+                );
+                msg += pc.gray(`   imported by : ${this.issuer.get(key)}\n`);
+              });
+            }
+          });
+          if (msg) {
+            console.log(
+              pc.green("Follow dependencies have multiple versions installed:")
+            );
+            console.log(msg);
+          } else {
+            //console.log("All dependencies are has only one version.");
+          }
+        }
+        await this.write();
+      }
+    );
   }
 }
 

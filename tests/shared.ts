@@ -19,7 +19,8 @@ export async function runWebpackBuild(name: string) {
 
   const plugin = new DepsAnalyzer({
     outDir: output,
-    verbose: true,
+    logFileCount: true,
+    logMultiDeps: true,
   });
 
   return new Promise<DepsAnalyzer>((resolve, reject) => {

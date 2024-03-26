@@ -21,7 +21,8 @@
   },
   "packageManager": "pnpm@8.14.1",
   "dependencies": {
-    "fs-extra": "^11.2.0"
+    "fs-extra": "^11.2.0",
+    "picocolors": "^1.0.0"
   },
   "exports": {
     ".": {
